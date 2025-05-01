@@ -4,9 +4,13 @@
   "description": "Video tracking and reporting application",
   "main": "app.js",
   "scripts": {
-    "build": "echo 'No build step required' && mkdir -p dist && cp -r *.html *.css *.js dist/",
-    "start": "echo 'Starting local server'"
+    "build": "echo 'No build step required'",
+    "start": "netlify dev"
   },
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "googleapis": "^128.0.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.10.1"
+  }
 }
