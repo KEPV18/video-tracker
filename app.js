@@ -1,133 +1,574 @@
-const API_TOKEN = 'YOUR_GITHUB_TOKEN'; // استبدل بالقيمة الحقيقية
-const GIST_ID = 'YOUR_GIST_ID'; // استبدل بالقيمة الحقيقية
-const GIST_FILENAME = 'video_data.json';
+// Main application file
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize variables
+    let timerInterval;
+    let startTime;
+    let isRunning = false;
+    let totalSeconds = 0;
+    let videosLogged = 0;
+    let vacationMode = false;
+    let notificationsEnabled = false;
+    let pendingSync = [];
+    let lastNotificationTime = 0;
 
-let videos = 0;
-let startTime = null;
-let timerInterval;
-let isDark = false;
+    // DOM elements
+    const minutesElement = document.getElementById('minutes');
+    const secondsElement = document.getElementById('seconds');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const addVideoBtn = document.getElementById('add-video');
+    const videosCountElement = document.getElementById('videos-count');
+    const speedElement = document.getElementById('speed');
+    const dailyProgressElement = document.getElementById('daily-progress');
+    const weeklyProgressElement = document.getElementById('weekly-progress');
+    const monthlyProgressElement = document.getElementById('monthly-progress');
+    const dailyPercentageElement = document.getElementById('daily-percentage');
+    const weeklyPercentageElement = document.getElementById('weekly-percentage');
+    const monthlyPercentageElement = document.getElementById('monthly-percentage');
+    const dailyVideosElement = document.getElementById('daily-videos');
+    const weeklyVideosElement = document.getElementById('weekly-videos');
+    const monthlyVideosElement = document.getElementById('monthly-videos');
+    const vacationToggle = document.getElementById('vacation-toggle');
+    const vacationInfo = document.getElementById('vacation-info');
+    const officialForm = document.getElementById('official-form');
+    const officialVideosInput = document.getElementById('official-videos');
+    const officialHoursInput = document.getElementById('official-hours');
+    const comparisonResult = document.getElementById('comparison-result');
+    const videosDiffElement = document.getElementById('videos-diff');
+    const hoursDiffElement = document.getElementById('hours-diff');
+    const speedDiffElement = document.getElementById('speed-diff');
+    const exportDailyBtn = document.getElementById('export-daily');
+    const exportWeeklyBtn = document.getElementById('export-weekly');
+    const exportMonthlyBtn = document.getElementById('export-monthly');
+    const notificationToggle = document.getElementById('notification-toggle');
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const notificationContainer = document.getElementById('notification-container');
+    
+    // Charts
+    let videosChart, speedChart;
 
-// العناصر DOM
-const videoCount = document.getElementById('video-count');
-const timeSpent = document.getElementById('time-spent');
-const speed = document.getElementById('speed');
-const addVideoBtn = document.getElementById('add-video');
-const themeToggle = document.getElementById('theme-toggle');
-
-// تهيئة الرسوم البيانية
-const ctx = document.getElementById('progress-chart').getContext('2d');
-const progressChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['اليوم', 'الأسبوع', 'الشهر'],
-        datasets: [{
-            label: 'الفيديوهات المنجزة',
-            data: [0, 0, 0],
-            backgroundColor: [
-                'rgba(52, 152, 219, 0.7)',
-                'rgba(46, 204, 113, 0.7)',
-                'rgba(155, 89, 182, 0.7)'
-            ]
-        }]
-    }
-});
-
-// تحميل البيانات الأولية
-loadInitialData();
-
-// الأحداث
-addVideoBtn.addEventListener('click', addVideo);
-themeToggle.addEventListener('click', toggleTheme);
-
-async function loadInitialData() {
-    try {
-        const response = await axios.get(`https://api.github.com/gists/${GIST_ID}`);
-        const data = JSON.parse(response.data.files[GIST_FILENAME].content);
-        
-        videos = data.videos || 0;
-        startTime = data.startTime ? new Date(data.startTime) : null;
-        
-        updateUI();
-        if (startTime) startTimer();
-    } catch (error) {
-        console.log('جارٍ التحميل من الذاكرة المحلية...');
-        const localData = localStorage.getItem('videoData');
-        if (localData) {
-            const data = JSON.parse(localData);
-            videos = data.videos;
-            startTime = data.startTime ? new Date(data.startTime) : null;
+    // Load saved data from localStorage
+    function loadData() {
+        const savedData = localStorage.getItem('videoTrackerData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            videosLogged = data.videosLogged || 0;
+            totalSeconds = data.totalSeconds || 0;
+            vacationMode = data.vacationMode || false;
+            vacationToggle.checked = vacationMode;
+            
             updateUI();
         }
     }
-}
 
-async function saveData() {
-    const data = {
-        videos,
-        startTime: startTime?.toISOString(),
-        updatedAt: new Date().toISOString()
-    };
+    // Save data to localStorage
+    function saveData() {
+        const data = {
+            videosLogged,
+            totalSeconds,
+            vacationMode
+        };
+        localStorage.setItem('videoTrackerData', JSON.stringify(data));
+    }
 
-    // الحفظ في GitHub Gist
-    try {
-        await axios.patch(`https://api.github.com/gists/${GIST_ID}`, {
-            files: {
-                [GIST_FILENAME]: {
-                    content: JSON.stringify(data)
+    // Update UI elements
+    function updateUI() {
+        // Update video count
+        videosCountElement.textContent = videosLogged;
+        
+        // Update speed calculation
+        if (totalSeconds > 0) {
+            const minutes = totalSeconds / 60;
+            const speed = videosLogged / minutes;
+            speedElement.textContent = speed.toFixed(1);
+        } else {
+            speedElement.textContent = '0.0';
+        }
+        
+        // Update progress bars
+        updateProgressBars();
+    }
+
+    // Start the timer
+    function startTimer() {
+        if (!isRunning) {
+            isRunning = true;
+            startTime = Date.now() - totalSeconds * 1000;
+            
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            
+            showNotification('Timer started!');
+        }
+    }
+
+    // Pause the timer
+    function pauseTimer() {
+        if (isRunning) {
+            clearInterval(timerInterval);
+            isRunning = false;
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = false;
+            
+            showNotification('Timer paused!');
+        }
+    }
+
+    // Stop the timer
+    function stopTimer() {
+        if (isRunning) {
+            clearInterval(timerInterval);
+            isRunning = false;
+            
+            // Update total seconds
+            totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = true;
+            
+            // Sync data to backend
+            syncDataToBackend();
+            
+            showNotification('Timer stopped!');
+        }
+    }
+
+    // Update timer display
+    function updateTimer() {
+        totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        
+        minutesElement.textContent = minutes.toString().padStart(2, '0');
+        secondsElement.textContent = seconds.toString().padStart(2, '0');
+        
+        updateUI();
+        
+        // Check if it's time for a notification reminder
+        if (notificationsEnabled && Date.now() - lastNotificationTime >= 3600000) { // 1 hour
+            lastNotificationTime = Date.now();
+            showNotification('Time to log your progress!');
+        }
+    }
+
+    // Add a video to the counter
+    function addVideo() {
+        videosLogged++;
+        updateUI();
+        
+        // Animate the button
+        addVideoBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            addVideoBtn.style.transform = 'scale(1)';
+        }, 100);
+        
+        // Sync data to backend
+        syncDataToBackend();
+    }
+
+    // Update progress bars
+    function updateProgressBars() {
+        const dailyTarget = 3000;
+        const weeklyTarget = 6 * dailyTarget; // 6 working days
+        const monthlyTarget = calculateMonthlyTarget();
+        
+        // Daily progress
+        const dailyPercentage = Math.min((videosLogged / dailyTarget) * 100, 100);
+        dailyProgressElement.style.width = `${dailyPercentage}%`;
+        dailyProgressElement.style.backgroundColor = getColorForPercentage(dailyPercentage);
+        dailyPercentageElement.textContent = `${Math.round(dailyPercentage)}%`;
+        dailyVideosElement.textContent = `${videosLogged}/${dailyTarget}`;
+        
+        // Weekly progress
+        const weeklyVideos = getWeeklyVideos();
+        const weeklyPercentage = Math.min((weeklyVideos / weeklyTarget) * 100, 100);
+        weeklyProgressElement.style.width = `${weeklyPercentage}%`;
+        weeklyProgressElement.style.backgroundColor = getColorForPercentage(weeklyPercentage);
+        weeklyPercentageElement.textContent = `${Math.round(weeklyPercentage)}%`;
+        weeklyVideosElement.textContent = `${weeklyVideos}/${weeklyTarget}`;
+        
+        // Monthly progress
+        const monthlyVideos = getMonthlyVideos();
+        const monthlyPercentage = Math.min((monthlyVideos / monthlyTarget) * 100, 100);
+        monthlyProgressElement.style.width = `${monthlyPercentage}%`;
+        monthlyProgressElement.style.backgroundColor = getColorForPercentage(monthlyPercentage);
+        monthlyPercentageElement.textContent = `${Math.round(monthlyPercentage)}%`;
+        monthlyVideosElement.textContent = `${monthlyVideos}/${monthlyTarget}`;
+    }
+
+    // Calculate monthly target based on working days
+    function calculateMonthlyTarget() {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        let workingDays = 0;
+        let currentDate = new Date(firstDayOfMonth);
+        
+        while (currentDate <= lastDayOfMonth) {
+            const day = currentDate.getDay();
+            // Count all days if in manual mode, otherwise exclude weekends
+            if (vacationMode || (day !== 0 && day !== 6)) {
+                workingDays++;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        return workingDays * 3000; // 3000 videos per working day
+    }
+
+    // Get videos for the current week
+    function getWeeklyVideos() {
+        // This would be implemented with actual data from the backend
+        // For now, we'll just use the current day's videos
+        return videosLogged;
+    }
+
+    // Get videos for the current month
+    function getMonthlyVideos() {
+        // This would be implemented with actual data from the backend
+        // For now, we'll just use the current day's videos
+        return videosLogged;
+    }
+
+    // Get color based on percentage
+    function getColorForPercentage(percentage) {
+        if (percentage >= 100) return '#28a745'; // Green
+        if (percentage >= 80) return '#ffc107';  // Yellow
+        return '#dc3545';                        // Red
+    }
+
+    // Toggle vacation mode
+    function toggleVacationMode() {
+        vacationMode = !vacationMode;
+        vacationInfo.textContent = vacationMode 
+            ? 'Current: Manual mode (7 working days/week)'
+            : 'Current: Auto mode (6 working days/week)';
+        saveData();
+        updateProgressBars();
+    }
+
+    // Sync data to backend
+    async function syncDataToBackend() {
+        try {
+            const response = await fetch('api/sync-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your-secret-api-key' // Replace with your actual API key
+                },
+                body: JSON.stringify({
+                    videosLogged,
+                    totalSeconds,
+                    vacationMode
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to sync data');
+            }
+            
+            // Clear any pending sync for this data
+            pendingSync = pendingSync.filter(item => 
+                item.videosLogged !== videosLogged || item.totalSeconds !== totalSeconds
+            );
+            
+            showNotification('Data synced successfully!');
+        } catch (error) {
+            console.error('Error syncing data:', error);
+            
+            // Add to pending sync queue
+            pendingSync.push({ videosLogged, totalSeconds, vacationMode, timestamp: Date.now() });
+            
+            // Save to localStorage as a fallback
+            localStorage.setItem(
+                'pendingSync',
+                JSON.stringify(pendingSync)
+            );
+            
+            showNotification('Failed to sync data. Will retry automatically.', 'error');
+            
+            // Try to resend after 30 seconds
+            setTimeout(attemptResend, 30000);
+        }
+    }
+
+    // Attempt to resend pending data
+    function attemptResend() {
+        if (pendingSync.length > 0) {
+            const oldestData = pendingSync[0];
+            
+            // Check if we've tried too many times
+            const attempts = localStorage.getItem(`syncAttempts-${oldestData.timestamp}`) || 0;
+            
+            if (attempts < 3) {
+                localStorage.setItem(
+                    `syncAttempts-${oldestData.timestamp}`,
+                    String(attempts + 1)
+                );
+                
+                // Try to sync again
+                syncDataToBackend();
+            } else {
+                // Give up after 3 attempts
+                pendingSync.shift();
+                localStorage.setItem('pendingSync', JSON.stringify(pendingSync));
+                showNotification('Sync failed after multiple attempts. Data saved locally.', 'error');
+            }
+        }
+    }
+
+    // Load pending sync data from localStorage
+    function loadPendingSync() {
+        const savedPendingSync = localStorage.getItem('pendingSync');
+        if (savedPendingSync) {
+            pendingSync = JSON.parse(savedPendingSync);
+        }
+    }
+
+    // Handle official data submission
+    async function handleOfficialDataSubmit(event) {
+        event.preventDefault();
+        
+        const officialVideos = parseInt(officialVideosInput.value) || 0;
+        const officialHours = parseFloat(officialHoursInput.value) || 0;
+        
+        if (isNaN(officialVideos) || isNaN(officialHours)) {
+            showNotification('Please enter valid numbers', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('api/submit-official-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your-secret-api-key' // Replace with your actual API key
+                },
+                body: JSON.stringify({
+                    officialVideos,
+                    officialHours,
+                    videosLogged,
+                    totalSeconds
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to submit official data');
+            }
+            
+            const result = await response.json();
+            
+            // Calculate differences
+            const videosDiff = officialVideos - videosLogged;
+            const hoursDiff = officialHours - (totalSeconds / 3600);
+            const speedDiff = (officialVideos / officialHours) - (videosLogged / (totalSeconds / 3600));
+            
+            // Update UI with comparison results
+            videosDiffElement.textContent = videosDiff;
+            videosDiffElement.className = 'comparison-diff ' + (videosDiff >= 0 ? 'plus' : 'minus');
+            
+            hoursDiffElement.textContent = hoursDiff.toFixed(2);
+            hoursDiffElement.className = 'comparison-diff ' + (hoursDiff >= 0 ? 'plus' : 'minus');
+            
+            speedDiffElement.textContent = speedDiff.toFixed(2);
+            speedDiffElement.className = 'comparison-diff ' + (speedDiff >= 0 ? 'plus' : 'minus');
+            
+            comparisonResult.style.display = 'block';
+            
+            // Reset form
+            officialVideosInput.value = '';
+            officialHoursInput.value = '';
+            
+            showNotification('Official data submitted successfully!');
+        } catch (error) {
+            console.error('Error submitting official data:', error);
+            showNotification('Failed to submit official data', 'error');
+        }
+    }
+
+    // Export reports
+    async function exportReport(type) {
+        try {
+            const response = await fetch(`api/export-report?type=${type}`, {
+                headers: {
+                    'X-API-Key': 'your-secret-api-key' // Replace with your actual API key
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to export report');
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            let filename;
+            switch (type) {
+                case 'daily':
+                    filename = `daily-report-${new Date().toISOString().split('T')[0]}.csv`;
+                    break;
+                case 'weekly':
+                    filename = `weekly-report-${new Date().toISOString().split('T')[0]}.csv`;
+                    break;
+                case 'monthly':
+                    filename = `monthly-report-${new Date().toISOString().split('T')[0]}.csv`;
+                    break;
+                default:
+                    filename = 'video-tracker-report.csv';
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showNotification(`Successfully exported ${type} report!`);
+        } catch (error) {
+            console.error('Error exporting report:', error);
+            showNotification(`Failed to export ${type} report`, 'error');
+        }
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        notificationContainer.appendChild(notification);
+        
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                notificationContainer.removeChild(notification);
+            }, 500);
+        }, 3000);
+    }
+
+    // Initialize charts
+    function initCharts() {
+        // Videos chart
+        const videosCtx = document.getElementById('videos-chart').getContext('2d');
+        videosChart = new Chart(videosCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Videos Logged',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#4a6bff',
+                    backgroundColor: 'rgba(74, 107, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
-        }, {
-            headers: {
-                Authorization: `token ${API_TOKEN}`
+        });
+        
+        // Speed chart
+        const speedCtx = document.getElementById('speed-chart').getContext('2d');
+        speedChart = new Chart(speedCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Videos per Minute',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
         });
-    } catch (error) {
-        // Fallback إلى localStorage
-        localStorage.setItem('videoData', JSON.stringify(data));
     }
-}
 
-function addVideo() {
-    videos++;
-    if (!startTime) startTimer();
-    updateUI();
-    saveData();
-}
+    // Toggle dark mode
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDarkMode);
+    }
 
-function startTimer() {
-    startTime = new Date();
-    timerInterval = setInterval(updateTimer, 1000);
-}
+    // Initialize dark mode from localStorage
+    function initDarkMode() {
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+    }
 
-function updateTimer() {
-    const now = new Date();
-    const diff = now - startTime;
-    const hours = Math.floor(diff / 3600000);
-    const minutes = Math.floor((diff % 3600000) / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-    
-    timeSpent.textContent = 
-        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
-    updateSpeed();
-}
+    // Event listeners
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    stopBtn.addEventListener('click', stopTimer);
+    addVideoBtn.addEventListener('click', addVideo);
+    vacationToggle.addEventListener('change', toggleVacationMode);
+    officialForm.addEventListener('submit', handleOfficialDataSubmit);
+    exportDailyBtn.addEventListener('click', () => exportReport('daily'));
+    exportWeeklyBtn.addEventListener('click', () => exportReport('weekly'));
+    exportMonthlyBtn.addEventListener('click', () => exportReport('monthly'));
+    notificationToggle.addEventListener('change', (e) => {
+        notificationsEnabled = e.target.checked;
+        if (notificationsEnabled) {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showNotification('Notifications enabled!');
+                } else {
+                    showNotification('Notifications blocked!', 'warning');
+                }
+            });
+        } else {
+            showNotification('Notifications disabled!');
+        }
+    });
+    darkModeToggle.addEventListener('click', toggleDarkMode);
 
-function updateSpeed() {
-    const minutes = (new Date() - startTime) / 60000;
-    const currentSpeed = (videos / minutes).toFixed(1);
-    speed.textContent = `${currentSpeed} فيديو/دقيقة`;
-}
+    // Initialize the app
+    function initApp() {
+        loadData();
+        loadPendingSync();
+        initCharts();
+        initDarkMode();
+        updateProgressBars();
+        
+        // Request notification permission on load
+        if (!'Notification' in window) {
+            showNotification('This browser does not support desktop notifications.', 'warning');
+        } else if (Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    }
 
-function updateUI() {
-    videoCount.textContent = videos;
-    updateChart();
-}
-
-function updateChart() {
-    progressChart.data.datasets[0].data = [videos, videos * 6, videos * 24];
-    progressChart.update();
-}
-
-function toggleTheme() {
-    isDark = !isDark;
-    document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    // Start the app
+    initApp();
+});
