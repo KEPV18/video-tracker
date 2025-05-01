@@ -1,0 +1,12 @@
+{
+  "name": "video-tracker",
+  "version": "1.0.0",
+  "description": "Video tracking and reporting application",
+  "main": "app.js",
+  "scripts": {
+    "build": "echo 'No build step required' && mkdir -p dist && cp -r *.html *.css *.js dist/",
+    "start": "echo 'Starting local server'"
+  },
+  "author": "",
+  "license": "ISC"
+}
