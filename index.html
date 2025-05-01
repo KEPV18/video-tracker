@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعقب الفيديوهات - نظام أحمد</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- شريط التحكم -->
+        <div class="control-bar">
+            <button id="theme-toggle"><i class="fas fa-moon"></i></button>
+            <button id="save-data"><i class="fas fa-save"></i> حفظ</button>
+        </div>
+
+        <!-- العداد الرئيسي -->
+        <div class="counter-box">
+            <h1>عدد الفيديوهات: <span id="video-count">0</span></h1>
+            <button id="add-video" class="main-btn"><i class="fas fa-plus"></i> إضافة فيديو</button>
+        </div>
+
+        <!-- إحصائيات الوقت -->
+        <div class="time-stats">
+            <div class="stat-item">
+                <h3>الوقت المنقضي:</h3>
+                <p id="time-spent">00:00:00</p>
+            </div>
+            <div class="stat-item">
+                <h3>السرعة:</h3>
+                <p id="speed">0.0 فيديو/دقيقة</p>
+            </div>
+        </div>
+
+        <!-- الرسوم البيانية -->
+        <div class="chart-container">
+            <canvas id="progress-chart"></canvas>
+        </div>
+
+        <!-- إدخال البيانات الرسمية -->
+        <div class="official-data">
+            <h2>إدخال البيانات الرسمية</h2>
+            <input type="number" id="official-videos" placeholder="عدد الفيديوهات الرسمي">
+            <button id="submit-official" class="secondary-btn">تأكيد</button>
+        </div>
+    </div>
+
+    <!-- المكتبات الخارجية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
