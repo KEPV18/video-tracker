@@ -1,10 +1,12 @@
 // Main application file
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize variables
+    // Add totalHours variable at the top with other variables
     let timerInterval;
     let startTime;
     let isRunning = false;
     let totalSeconds = 0;
+    let totalHours = 0;
     let videosLogged = 0;
     let vacationMode = false;
     let notificationsEnabled = false;
@@ -55,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = JSON.parse(savedData);
             videosLogged = data.videosLogged || 0;
             totalSeconds = data.totalSeconds || 0;
+            totalHours = data.totalHours || 0;
             vacationMode = data.vacationMode || false;
             vacationToggle.checked = vacationMode;
             
@@ -67,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             videosLogged,
             totalSeconds,
+            totalHours,
             vacationMode
         };
         localStorage.setItem('videoTrackerData', JSON.stringify(data));
@@ -121,13 +125,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Stop the timer
+    // Update the stopTimer function
     function stopTimer() {
         if (isRunning) {
             clearInterval(timerInterval);
             isRunning = false;
             
-            // Update total seconds
-            totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+            // Reset timer to zero
+            totalSeconds = 0;
+            startTime = null;
+            minutesElement.textContent = '00';
+            secondsElement.textContent = '00';
             
             startBtn.disabled = false;
             pauseBtn.disabled = true;
@@ -136,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Sync data to backend
             syncDataToBackend();
             
-            showNotification('Timer stopped!');
+            showNotification('Timer stopped and reset!');
         }
     }
 
@@ -174,33 +182,141 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update progress bars
+    // Update the updateProgressBars function
     function updateProgressBars() {
-        const dailyTarget = 3000;
-        const weeklyTarget = 6 * dailyTarget; // 6 working days
-        const monthlyTarget = calculateMonthlyTarget();
+        // Constants
+        const DAILY_VIDEO_TARGET = 3000;
+        const DAILY_HOURS_TARGET = 8;
+        const WORKING_DAYS = vacationMode ? 7 : 6;
+        const WEEKLY_VIDEO_TARGET = DAILY_VIDEO_TARGET * WORKING_DAYS;
+        const WEEKLY_HOURS_TARGET = DAILY_HOURS_TARGET * WORKING_DAYS;
         
+        // Calculate monthly targets
+        const monthlyVideoTarget = calculateMonthlyTarget();
+        const monthlyHoursTarget = calculateMonthlyHoursTarget();
+        
+        // Update video progress
+        updateProgressSection({
+            current: videosLogged,
+            daily: DAILY_VIDEO_TARGET,
+            weekly: WEEKLY_VIDEO_TARGET,
+            monthly: monthlyVideoTarget,
+            elements: {
+                daily: {
+                    progress: dailyProgressElement,
+                    percentage: dailyPercentageElement,
+                    count: dailyVideosElement
+                },
+                weekly: {
+                    progress: weeklyProgressElement,
+                    percentage: weeklyPercentageElement,
+                    count: weeklyVideosElement
+                },
+                monthly: {
+                    progress: monthlyProgressElement,
+                    percentage: monthlyPercentageElement,
+                    count: monthlyVideosElement
+                }
+            }
+        });
+        
+        // Update hours progress
+        updateProgressSection({
+            current: totalHours,
+            daily: DAILY_HOURS_TARGET,
+            weekly: WEEKLY_HOURS_TARGET,
+            monthly: monthlyHoursTarget,
+            elements: {
+                daily: {
+                    progress: document.getElementById('daily-hours-progress'),
+                    percentage: document.getElementById('daily-hours-percentage'),
+                    count: document.getElementById('daily-hours')
+                },
+                weekly: {
+                    progress: document.getElementById('weekly-hours-progress'),
+                    percentage: document.getElementById('weekly-hours-percentage'),
+                    count: document.getElementById('weekly-hours')
+                },
+                monthly: {
+                    progress: document.getElementById('monthly-hours-progress'),
+                    percentage: document.getElementById('monthly-hours-percentage'),
+                    count: document.getElementById('monthly-hours')
+                }
+            },
+            formatValue: (val) => val.toFixed(1)
+        });
+    }
+
+    function updateProgressSection({ current, daily, weekly, monthly, elements, formatValue = String }) {
         // Daily progress
-        const dailyPercentage = Math.min((videosLogged / dailyTarget) * 100, 100);
-        dailyProgressElement.style.width = `${dailyPercentage}%`;
-        dailyProgressElement.style.backgroundColor = getColorForPercentage(dailyPercentage);
-        dailyPercentageElement.textContent = `${Math.round(dailyPercentage)}%`;
-        dailyVideosElement.textContent = `${videosLogged}/${dailyTarget}`;
+        const dailyPercentage = Math.min((current / daily) * 100, 100);
+        elements.daily.progress.style.width = `${dailyPercentage}%`;
+        elements.daily.percentage.textContent = `${Math.round(dailyPercentage)}%`;
+        elements.daily.count.textContent = `${formatValue(current)}/${formatValue(daily)}`;
         
         // Weekly progress
-        const weeklyVideos = getWeeklyVideos();
-        const weeklyPercentage = Math.min((weeklyVideos / weeklyTarget) * 100, 100);
-        weeklyProgressElement.style.width = `${weeklyPercentage}%`;
-        weeklyProgressElement.style.backgroundColor = getColorForPercentage(weeklyPercentage);
-        weeklyPercentageElement.textContent = `${Math.round(weeklyPercentage)}%`;
-        weeklyVideosElement.textContent = `${weeklyVideos}/${weeklyTarget}`;
+        const weeklyPercentage = Math.min((current / weekly) * 100, 100);
+        elements.weekly.progress.style.width = `${weeklyPercentage}%`;
+        elements.weekly.percentage.textContent = `${Math.round(weeklyPercentage)}%`;
+        elements.weekly.count.textContent = `${formatValue(current)}/${formatValue(weekly)}`;
         
         // Monthly progress
-        const monthlyVideos = getMonthlyVideos();
-        const monthlyPercentage = Math.min((monthlyVideos / monthlyTarget) * 100, 100);
-        monthlyProgressElement.style.width = `${monthlyPercentage}%`;
-        monthlyProgressElement.style.backgroundColor = getColorForPercentage(monthlyPercentage);
-        monthlyPercentageElement.textContent = `${Math.round(monthlyPercentage)}%`;
-        monthlyVideosElement.textContent = `${monthlyVideos}/${monthlyTarget}`;
+        const monthlyPercentage = Math.min((current / monthly) * 100, 100);
+        elements.monthly.progress.style.width = `${monthlyPercentage}%`;
+        elements.monthly.percentage.textContent = `${Math.round(monthlyPercentage)}%`;
+        elements.monthly.count.textContent = `${formatValue(current)}/${formatValue(monthly)}`;
+    }
+
+    // Add new helper function for monthly hours target
+    function calculateMonthlyHoursTarget() {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        let workingDays = 0;
+        let currentDate = new Date(firstDayOfMonth);
+        
+        while (currentDate <= lastDayOfMonth) {
+            const day = currentDate.getDay();
+            if (vacationMode || (day !== 0 && day !== 6)) {
+                workingDays++;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        return workingDays * 8; // 8 hours per working day
+    }
+    
+    // Add helper functions for weekly and monthly hours
+    function getWeeklyHours() {
+        // This would be implemented with actual data from the backend
+        // For now, we'll just use the current day's hours
+        return totalHours;
+    }
+    
+    function getMonthlyHours() {
+        // This would be implemented with actual data from the backend
+        // For now, we'll just use the current day's hours
+        return totalHours;
+    }
+    
+    // Update the updateTimer function
+    function updateTimer() {
+        totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+        totalHours = totalSeconds / 3600;
+        
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        
+        minutesElement.textContent = minutes.toString().padStart(2, '0');
+        secondsElement.textContent = seconds.toString().padStart(2, '0');
+        
+        updateUI();
+        
+        if (notificationsEnabled && Date.now() - lastNotificationTime >= 3600000) {
+            lastNotificationTime = Date.now();
+            showNotification('Time to log your progress!');
+        }
     }
 
     // Calculate monthly target based on working days
