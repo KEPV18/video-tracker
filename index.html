@@ -1,54 +1,152 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تعقب الفيديوهات - نظام أحمد</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <title>Video Tracker & Reporter</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-    <div class="container">
-        <!-- شريط التحكم -->
-        <div class="control-bar">
-            <button id="theme-toggle"><i class="fas fa-moon"></i></button>
-            <button id="save-data"><i class="fas fa-save"></i> حفظ</button>
-        </div>
-
-        <!-- العداد الرئيسي -->
-        <div class="counter-box">
-            <h1>عدد الفيديوهات: <span id="video-count">0</span></h1>
-            <button id="add-video" class="main-btn"><i class="fas fa-plus"></i> إضافة فيديو</button>
-        </div>
-
-        <!-- إحصائيات الوقت -->
-        <div class="time-stats">
-            <div class="stat-item">
-                <h3>الوقت المنقضي:</h3>
-                <p id="time-spent">00:00:00</p>
+<body class="light-mode">
+    <div id="app">
+        <header>
+            <h1><i class="fas fa-video"></i> Video Tracker & Reporter</h1>
+            <div class="header-controls">
+                <button id="dark-mode-toggle" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
+                <button id="notification-toggle" title="Toggle Notifications"><i class="fas fa-bell"></i></button>
             </div>
-            <div class="stat-item">
-                <h3>السرعة:</h3>
-                <p id="speed">0.0 فيديو/دقيقة</p>
-            </div>
-        </div>
+        </header>
 
-        <!-- الرسوم البيانية -->
-        <div class="chart-container">
-            <canvas id="progress-chart"></canvas>
-        </div>
+        <main>
+            <section class="dashboard">
+                <div class="controls-panel">
+                    <div class="timer-container">
+                        <h2>Session Timer</h2>
+                        <div class="timer-display">
+                            <span id="minutes">00</span>:<span id="seconds">00</span>
+                        </div>
+                        <div class="timer-controls">
+                            <button id="start-btn" class="btn primary"><i class="fas fa-play"></i> Start</button>
+                            <button id="pause-btn" class="btn secondary" disabled><i class="fas fa-pause"></i> Pause</button>
+                            <button id="stop-btn" class="btn danger" disabled><i class="fas fa-stop"></i> Stop</button>
+                        </div>
+                    </div>
 
-        <!-- إدخال البيانات الرسمية -->
-        <div class="official-data">
-            <h2>إدخال البيانات الرسمية</h2>
-            <input type="number" id="official-videos" placeholder="عدد الفيديوهات الرسمي">
-            <button id="submit-official" class="secondary-btn">تأكيد</button>
-        </div>
+                    <div class="video-counter-container">
+                        <h2>Video Counter</h2>
+                        <button id="add-video" class="btn primary large">
+                            <i class="fas fa-plus"></i> +1 Video
+                        </button>
+                        <div class="counter-display">
+                            <h3>Today's Videos: <span id="videos-count">0</span></h3>
+                            <h3>Speed: <span id="speed">0.0</span> videos/minute</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-panel">
+                    <h2>Progress</h2>
+                    <div class="progress-container">
+                        <div class="progress-item">
+                            <h3>Daily Target (3000 videos)</h3>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="daily-progress"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span id="daily-percentage">0%</span>
+                                <span id="daily-videos">0/3000</span>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <h3>Weekly Target (18000 videos)</h3>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="weekly-progress"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span id="weekly-percentage">0%</span>
+                                <span id="weekly-videos">0/18000</span>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <h3>Monthly Target</h3>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="monthly-progress"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span id="monthly-percentage">0%</span>
+                                <span id="monthly-videos">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vacation-mode">
+                    <h2>Vacation Mode</h2>
+                    <div class="toggle-container">
+                        <span>Auto (6 days/week)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="vacation-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Manual (7 days/week)</span>
+                    </div>
+                    <p id="vacation-info">Current: Auto mode (6 working days/week)</p>
+                </div>
+
+                <div class="official-data">
+                    <h2>Enter Official Data</h2>
+                    <form id="official-form">
+                        <div class="form-group">
+                            <label for="official-videos">Official Videos:</label>
+                            <input type="number" id="official-videos" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="official-hours">Official Hours:</label>
+                            <input type="number" id="official-hours" step="0.01" min="0">
+                        </div>
+                        <button type="submit" class="btn primary">Submit Official Data</button>
+                    </form>
+                    <div class="comparison-result" id="comparison-result">
+                        <h3>Comparison Results</h3>
+                        <p id="comparison-videos">Videos: <span class="comparison-diff" id="videos-diff">0</span></p>
+                        <p id="comparison-hours">Hours: <span class="comparison-diff" id="hours-diff">0</span></p>
+                        <p id="comparison-speed">Speed: <span class="comparison-diff" id="speed-diff">0</span> videos/minute</p>
+                    </div>
+                </div>
+
+                <div class="export-panel">
+                    <h2>Export Reports</h2>
+                    <div class="export-buttons">
+                        <button id="export-daily" class="btn secondary"><i class="fas fa-file-csv"></i> Export Daily</button>
+                        <button id="export-weekly" class="btn secondary"><i class="fas fa-file-csv"></i> Export Weekly</button>
+                        <button id="export-monthly" class="btn secondary"><i class="fas fa-file-csv"></i> Export Monthly</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="charts">
+                <h2>Performance Trends</h2>
+                <div class="chart-container">
+                    <canvas id="videos-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="speed-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="notifications">
+                <div id="notification-container"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2023 Video Tracker & Reporter</p>
+        </footer>
     </div>
 
-    <!-- المكتبات الخارجية -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js" type="module"></script>
 </body>
 </html>
