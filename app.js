@@ -1,3 +1,124 @@
+// app.js
+
+// أضف هذه الثوابت في بداية الملف
+const SPREADSHEET_ID = 'your-sheet-id';
+const API_KEY = 'your-api-key';
+const SHEET_NAME = 'Sheet1';
+
+// أضف هذا الدالة الجديدة لاستيراد البيانات
+async function loadSheetData() {
+    try {
+        const response = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`
+        );
+        
+        const data = await response.json();
+        return data.values;
+    } catch (error) {
+        console.error('Error loading sheet data:', error);
+        return null;
+    }
+}
+
+// أضف هذه الدالة لحساب الإحصائيات
+function calculateProgress(data) {
+    const today = new Date().toISOString().split('T')[0];
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    let todayData = null;
+    const monthData = [];
+    let totalVideos = 0;
+    let totalHours = 0;
+    let workingDays = 0;
+
+    data.forEach(row => {
+        const date = row[0];
+        if (!date) return;
+
+        // معالجة بيانات اليوم الحالي
+        if (date === today) {
+            todayData = {
+                videos: row[10] || row[1] || 0, // العمود K ثم B
+                hours: row[11] || row[2] || 0   // العمود L ثم C
+            };
+        }
+
+        // معالجة بيانات الشهر الحالي
+        const rowDate = new Date(date);
+        if (rowDate.getMonth() === currentMonth && rowDate.getFullYear() === currentYear) {
+            const videos = parseInt(row[10] || row[1] || 0);
+            const hours = parseFloat(row[11] || row[2] || 0);
+            
+            if (videos > 0 || hours > 0) {
+                monthData.push({
+                    date,
+                    videos,
+                    hours
+                });
+                workingDays++;
+                totalVideos += videos;
+                totalHours += hours;
+            }
+        }
+    });
+
+    return { todayData, monthData, totalVideos, totalHours, workingDays };
+}
+
+// أضف هذه الدالة لتحديث واجهة المستخدم
+function updateUIWithSheetData(progressData) {
+    const { todayData, totalVideos, totalHours, workingDays } = progressData;
+    
+    // تحديث بيانات اليوم
+    if (todayData) {
+        document.getElementById('videos-count').textContent = todayData.videos;
+        document.getElementById('speed').textContent = 
+            (todayData.videos / (todayData.hours * 60)).toFixed(1);
+    }
+    
+    // حساب الأهداف
+    const dailyVideoTarget = 3000;
+    const dailyHourTarget = 8;
+    const weeklyVideoTarget = dailyVideoTarget * 6;
+    const monthlyVideoTarget = dailyVideoTarget * workingDays;
+    const weeklyHourTarget = dailyHourTarget * 6;
+    const monthlyHourTarget = dailyHourTarget * workingDays;
+    
+    // تحديث شريط التقدم للفيديوهات
+    updateProgressSection({
+        current: todayData?.videos || 0,
+        daily: dailyVideoTarget,
+        weekly: weeklyVideoTarget,
+        monthly: monthlyVideoTarget,
+        elements: { /* العناصر هنا */ }
+    });
+    
+    // تحديث شريط التقدم للساعات
+    updateProgressSection({
+        current: todayData?.hours || 0,
+        daily: dailyHourTarget,
+        weekly: weeklyHourTarget,
+        monthly: monthlyHourTarget,
+        elements: { /* العناصر هنا */ },
+        formatValue: v => v.toFixed(1)
+    });
+}
+
+// عدّل دالة initApp لتحميل البيانات
+async function initApp() {
+    // ... الكود الحالي ...
+    
+    // تحميل بيانات الجدول
+    const sheetData = await loadSheetData();
+    if (sheetData) {
+        const progressData = calculateProgress(sheetData);
+        localStorage.setItem('sheetData', JSON.stringify(progressData));
+        updateUIWithSheetData(progressData);
+    }
+
+
 // Main application file
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize variables
@@ -573,6 +694,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
+
+    // أضف حدث تحميل البيانات عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', async () => {
+    // محاولة استخدام البيانات المحفوظة أولاً
+    const savedData = localStorage.getItem('sheetData');
+    if (savedData) {
+        updateUIWithSheetData(JSON.parse(savedData));
+    }
+    
+    // تحديث البيانات من الجدول
+    const sheetData = await loadSheetData();
+    if (sheetData) {
+        const progressData = calculateProgress(sheetData);
+        localStorage.setItem('sheetData', JSON.stringify(progressData));
+        updateUIWithSheetData(progressData);
+    }
+
     // Initialize charts
     function initCharts() {
         // Videos chart
@@ -688,3 +826,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start the app
     initApp();
 });
+
+
+    
