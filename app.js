@@ -697,6 +697,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateUIWithSheetData(progressData);
     }
 
+    } 
+
     // Initialize charts
     function initCharts() {
         // Videos chart
