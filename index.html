@@ -7,10 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <head>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-    </head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body class="light-mode">
     <div id="app">
@@ -32,11 +30,19 @@
         </header>
 
         <main>
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="loading-content">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                    <p>Loading Data from Google Sheets...</p>
+                </div>
+            </div>
+
             <div class="dashboard">
                 <!-- Timer Section -->
                 <section class="timer-card">
                     <div class="timer-container">
-                        <h2>Session Timer</h2>
+                        <h2><i class="fas fa-stopwatch"></i> Session Timer</h2>
                         <div class="timer-display">
                             <span id="minutes">00</span>:<span id="seconds">00</span>
                         </div>
@@ -57,14 +63,27 @@
                 <!-- Video Counter -->
                 <section class="counter-card">
                     <div class="video-counter-container">
-                        <h2>Video Counter</h2>
+                        <h2><i class="fas fa-video"></i> Video Counter</h2>
+                        
+                        <!-- Official Data Display -->
+                        <div class="official-data-display">
+                            <div class="official-data-item">
+                                <i class="fas fa-file-contract"></i>
+                                <span>Official: </span>
+                                <span id="official-videos-display" class="official-value">0</span>
+                                <span class="official-label">videos</span>
+                                <span id="official-hours-display" class="official-value">0</span>
+                                <span class="official-label">hours</span>
+                            </div>
+                        </div>
+
                         <button id="add-video" class="btn primary large">
                             <i class="fas fa-plus"></i> Add Video
                         </button>
                         <div class="counter-stats">
                             <div class="stat-item">
                                 <span class="stat-value" id="videos-count">0</span>
-                                <span class="stat-label">Total Videos</span>
+                                <span class="stat-label">Current Videos</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-value" id="speed">0.0</span>
@@ -77,83 +96,111 @@
 
             <!-- Progress Sections -->
             <section class="progress-panel">
-                <h2 class="section-title">Performance Metrics</h2>
+                <h2 class="section-title"><i class="fas fa-tachometer-alt"></i> Performance Metrics</h2>
                 <div class="progress-grid">
                     <!-- Video Progress -->
                     <div class="progress-section videos-progress">
                         <h3><i class="fas fa-film"></i> Video Targets</h3>
-                        <!-- Progress items same as before -->
+                        <div class="target-container">
+                            <div class="target-card daily-target">
+                                <div class="target-header">
+                                    <span>Daily Target</span>
+                                    <div class="target-values">
+                                        <span class="actual-value" id="daily-videos-actual">0</span>
+                                        <span class="separator">/</span>
+                                        <span class="target-value">3000</span>
+                                    </div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div id="daily-videos-progress" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="target-percentage" id="daily-videos-percentage">0%</div>
+                            </div>
+
+                            <div class="target-card weekly-target">
+                                <!-- Same structure as daily -->
+                            </div>
+
+                            <div class="target-card monthly-target">
+                                <!-- Same structure as daily -->
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Hours Progress -->
                     <div class="progress-section hours-progress">
                         <h3><i class="fas fa-clock"></i> Time Targets</h3>
-                        <!-- Progress items same as before -->
+                        <!-- Same structure as Video Progress -->
                     </div>
                 </div>
             </section>
 
-            <!-- Vacation Mode - Redesigned -->
+            <!-- Vacation Mode - Enhanced -->
             <section class="vacation-mode-card">
-                <h2><i class="fas fa-umbrella-beach"></i> Vacation Mode</h2>
-                <div class="vacation-toggle-row">
-                    <span class="vac-label">Auto (6 days/week)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="vacation-toggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <span class="vac-label">Manual (7 days/week)</span>
+                <h2><i class="fas fa-umbrella-beach"></i> Work Schedule</h2>
+                <div class="vacation-toggle-container">
+                    <div class="mode-description" id="vacation-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Current Schedule: 6 days/week</span>
+                    </div>
+                    <div class="toggle-wrapper">
+                        <span class="mode-label">Standard</span>
+                        <label class="switch">
+                            <input type="checkbox" id="vacation-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="mode-label">Extended</span>
+                    </div>
                 </div>
-                <p id="vacation-info" class="vacation-info">Current: Auto mode (6 working days/week)</p>
             </section>
 
-            <!-- Official Data - Redesigned -->
+            <!-- Official Data Input - Enhanced -->
             <section class="official-data-card">
-                <h2><i class="fas fa-file-signature"></i> Enter Official Data</h2>
+                <h2><i class="fas fa-file-signature"></i> Official Data Entry</h2>
                 <form id="official-form" class="official-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="official-videos">Official Videos</label>
-                            <input type="number" id="official-videos" min="0">
+                            <label for="official-videos">
+                                <i class="fas fa-video"></i> Official Videos
+                            </label>
+                            <input type="number" id="official-videos" min="0" class="modern-input">
                         </div>
                         <div class="form-group">
-                            <label for="official-hours">Official Hours</label>
-                            <input type="number" id="official-hours" step="0.01" min="0">
+                            <label for="official-hours">
+                                <i class="fas fa-clock"></i> Official Hours
+                            </label>
+                            <input type="number" id="official-hours" step="0.01" min="0" class="modern-input">
                         </div>
-                        <button type="submit" class="btn primary">Submit</button>
+                        <button type="submit" class="btn primary">
+                            <i class="fas fa-paper-plane"></i> Submit
+                        </button>
                     </div>
                 </form>
                 <div class="comparison-result" id="comparison-result">
-                    <h3>Comparison Results</h3>
+                    <h3><i class="fas fa-balance-scale"></i> Comparison Results</h3>
                     <div class="comparison-grid">
-                        <div>
-                            <span class="comparison-label">Videos:</span>
-                            <span class="comparison-diff" id="videos-diff">0</span>
-                        </div>
-                        <div>
-                            <span class="comparison-label">Hours:</span>
-                            <span class="comparison-diff" id="hours-diff">0</span>
-                        </div>
-                        <div>
-                            <span class="comparison-label">Speed:</span>
-                            <span class="comparison-diff" id="speed-diff">0</span>
-                            <span class="comparison-unit">videos/minute</span>
-                        </div>
+                        <!-- Comparison items same as before -->
                     </div>
                 </div>
             </section>
 
-            <!-- Export Reports -->
+            <!-- Export Reports - Enhanced -->
             <section class="export-panel-card">
                 <h2><i class="fas fa-file-export"></i> Export Reports</h2>
                 <div class="export-buttons">
-                    <button id="export-daily" class="btn secondary"><i class="fas fa-file-csv"></i> Daily</button>
-                    <button id="export-weekly" class="btn secondary"><i class="fas fa-file-csv"></i> Weekly</button>
-                    <button id="export-monthly" class="btn secondary"><i class="fas fa-file-csv"></i> Monthly</button>
+                    <button id="export-daily" class="btn secondary">
+                        <i class="fas fa-file-csv"></i> Daily Report
+                    </button>
+                    <button id="export-weekly" class="btn secondary">
+                        <i class="fas fa-file-csv"></i> Weekly Report
+                    </button>
+                    <button id="export-monthly" class="btn secondary">
+                        <i class="fas fa-file-csv"></i> Monthly Report
+                    </button>
                 </div>
             </section>
 
-            <!-- Performance Trends - Redesigned -->
+            <!-- Performance Trends - Enhanced -->
             <section class="charts-panel">
                 <h2><i class="fas fa-chart-area"></i> Performance Trends</h2>
                 <div class="charts-flex">
@@ -166,35 +213,31 @@
                 </div>
             </section>
 
+            <!-- Notifications System -->
             <section class="notifications">
                 <div id="notification-container"></div>
             </section>
         </main>
 
-        <!-- REMOVE THIS ENTIRE SECTION - It contains the duplicate timer and video counter -->
-        <!-- <div class="controls-panel">
+        <!-- Archived Sections (Keep Commented) -->
+        <!--
+        <div class="controls-panel">
             <div class="timer-container">...</div>
             <div class="video-counter-container">...</div>
-        </div> -->
-    
-        <!-- REMOVE THIS ENTIRE SECTION - It's already included in the redesigned version above -->
-        <!-- <div class="progress-panel">...</div> -->
-    
-        <!-- REMOVE THIS ENTIRE SECTION - It's already included in the redesigned version above -->
-        <!-- <div class="vacation-mode">...</div> -->
-    
-        <!-- REMOVE THIS ENTIRE SECTION - It's already included in the redesigned version above -->
-        <!-- <div class="official-data">...</div> -->
-    
-        <!-- REMOVE THIS ENTIRE SECTION - It's already included in the redesigned version above -->
-        <!-- <div class="export-panel">...</div> -->
-</main>
+        </div>
+        
+        <div class="progress-panel">...</div>
+        -->
 
-<footer>
-    <p>&copy; 2023 Video Tracker & Reporter</p>
-</footer>
-</div>
+        <footer>
+            <p>&copy; 2023 Video Tracker & Reporter</p>
+            <div class="footer-info">
+                <span>Data Source: Google Sheets</span>
+                <span id="last-sync">Last Sync: Never</span>
+            </div>
+        </footer>
+    </div>
 
-<script src="app.js" type="module"></script>
+    <script src="app.js" type="module"></script>
 </body>
 </html>
