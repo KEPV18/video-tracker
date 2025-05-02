@@ -118,7 +118,7 @@ async function initApp() {
         updateUIWithSheetData(progressData);
     }
 
-
+}
 // Main application file
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize variables
@@ -269,23 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Update timer display
-    function updateTimer() {
-        totalSeconds = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
+    
         
-        minutesElement.textContent = minutes.toString().padStart(2, '0');
-        secondsElement.textContent = seconds.toString().padStart(2, '0');
-        
-        updateUI();
-        
-        // Check if it's time for a notification reminder
-        if (notificationsEnabled && Date.now() - lastNotificationTime >= 3600000) { // 1 hour
-            lastNotificationTime = Date.now();
-            showNotification('Time to log your progress!');
-        }
-    }
+
 
     // Add a video to the counter
     function addVideo() {
