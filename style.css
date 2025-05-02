@@ -416,3 +416,244 @@ section {
         gap: 1rem;
     }
 }
+
+/* ===== Loading Overlay ===== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 26, 46, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--dark-text);
+}
+
+.loading-content i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.loading-content p {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
+
+/* ===== Official Data Display ===== */
+.official-data-banner {
+    background: var(--surface-dark-2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border: 1px solid rgba(58, 134, 255, 0.2);
+}
+
+.official-data-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.official-data-item span:first-child {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.official-value {
+    font-weight: 700;
+    color: var(--success-color);
+    margin: 0 0.5rem;
+}
+
+.official-label {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* ===== Progress Targets ===== */
+.target-container {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.target-card {
+    background: var(--surface-2);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.dark-mode .target-card {
+    background: var(--surface-dark-2);
+}
+
+.target-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(58, 134, 255, 0.1);
+}
+
+.target-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.target-values {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.actual-value {
+    color: var(--success-color);
+}
+
+.target-value {
+    color: var(--primary-color);
+}
+
+.progress-bar {
+    height: 12px;
+    background: rgba(58, 134, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 6px;
+    transition: var(--transition);
+    width: 0;
+}
+
+.target-percentage {
+    text-align: right;
+    margin-top: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+/* ===== Enhanced Vacation Mode ===== */
+.vacation-toggle-container {
+    background: var(--surface-2);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.dark-mode .vacation-toggle-container {
+    background: var(--surface-dark-2);
+}
+
+.mode-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.mode-label {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.mode-description {
+    text-align: center;
+    color: var(--secondary-color);
+    font-size: 0.95rem;
+    padding: 0.75rem;
+    background: rgba(58, 134, 255, 0.05);
+    border-radius: 8px;
+}
+
+/* ===== Footer Enhancements ===== */
+footer {
+    margin-top: 3rem;
+    padding: 2rem;
+    text-align: center;
+    background: var(--surface-1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+}
+
+.dark-mode footer {
+    background: var(--surface-dark-1);
+}
+
+.footer-info {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+#last-sync {
+    color: var(--success-color);
+    font-weight: 500;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 768px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .progress-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .official-data-item {
+        flex-wrap: wrap;
+        text-align: center;
+    }
+    
+    .target-card {
+        padding: 1rem;
+    }
+    
+    .footer-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .timer-controls {
+        flex-direction: column;
+    }
+    
+    .btn.large {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .comparison-grid {
+        grid-template-columns: 1fr;
+    }
+}
